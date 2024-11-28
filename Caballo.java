@@ -7,6 +7,7 @@ public class Caballo implements Runnable {
     private Interfaz interfaz;
     private static boolean carreraTerminada = false;
 
+
     public Caballo(){
 
     }
@@ -21,7 +22,7 @@ public class Caballo implements Runnable {
     public void run() {
         while (porcentaje < distanciaMaxima && !carreraTerminada) {
             // Avanzar aleatoriamente entre 1 y 5 unidades
-            int avance = generaNumAleatorio(0, 5);
+            int avance = generaNumAleatorio(0, 10);
             porcentaje += avance;
 
             if (porcentaje > distanciaMaxima) {
@@ -62,16 +63,16 @@ public class Caballo implements Runnable {
         return nombre;
     }
 
+    // Metodo para reiniciar el caballo (ponerlo en su posición inicial)
+    public void reiniciar() {
+        this.porcentaje = 0;
+    }
+
     public boolean getCarreraTerminada(){
         return carreraTerminada;
     }
 
     public void setCarreraTerminada(boolean opcion){
-        this.carreraTerminada = opcion;
-    }
-
-    // Método para reiniciar el caballo (ponerlo en su posición inicial)
-    public void reiniciar() {
-        this.porcentaje = 0;
+        carreraTerminada = opcion;
     }
 }

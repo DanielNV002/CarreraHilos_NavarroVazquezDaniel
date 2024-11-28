@@ -7,41 +7,46 @@ import java.util.List;
 
 public class Interfaz extends JFrame {
     Caballo C = new Caballo();
-    private final List<JProgressBar> barrasDeProgreso;
+    private final List<JLabel> caballosLabels;  // Lista de etiquetas para los caballos
     private final List<Caballo> caballos;
     private final JButton btnIniciar;
-    private static boolean carreraTerminada = false;  // Variable para saber si la carrera terminó
 
     public Interfaz() {
         setTitle("Simulador de Carrera de Caballos");
-        setLayout(new GridLayout(5, 1));  // Añadimos una fila más para los caballos y un botón
+        setLayout(null);  // Usamos un diseño absoluto para poder mover los caballos
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(800, 400);
+        setSize(900, 400);
 
-        barrasDeProgreso = new ArrayList<>();
+        caballosLabels = new ArrayList<>();
         caballos = new ArrayList<>();
 
-        // Crear los caballos y las barras de progreso individuales
-        for (int i = 1; i <= 4; i++) {
+        // Crear el botón "Iniciar" para comenzar la carrera
+        btnIniciar = new JButton("Iniciar Carrera");
+        btnIniciar.setBounds(350, 300, 150, 30);  // Ubicación del botón
+        add(btnIniciar);
+
+        // Crear los caballos y las imágenes (JLabels)
+        for (int i = 1; i <= caballos.size(); i++) {
             Caballo caballo = new Caballo("Caballo " + i, 500);  // Distancia de la carrera es 500
             caballos.add(caballo);
 
-            // Crear la barra de progreso para cada caballo
-            JProgressBar barra = new JProgressBar(0, 500);  // La barra va de 0 a 500
-            barra.setStringPainted(true);
-            barra.setString("Caballo " + i);
-            barrasDeProgreso.add(barra);
+            // Cargar la imagen original del caballo
+            ImageIcon caballoIcon = new ImageIcon("resources/Horse.png");
 
-            // Agregar las barras de los caballos a la ventana
-            add(barra);
+            // Reescalar la imagen (ajusta el tamaño según sea necesario)
+            Image imagenEscalada = caballoIcon.getImage().getScaledInstance(50, 30, Image.SCALE_SMOOTH);
+
+            // Crear el JLabel con la imagen escalada
+            JLabel caballoLabel = new JLabel(new ImageIcon(imagenEscalada));
+            caballoLabel.setBounds(50, 50 + i * 50, 50, 30);  // Posición inicial de cada caballo
+            caballosLabels.add(caballoLabel);
+
+            // Agregar las etiquetas de los caballos a la ventana
+            add(caballoLabel);
 
             // Establecer la referencia a la ventana para actualizar el progreso
             caballo.setCarreraDeCaballos(this);
         }
-
-        // Crear el botón "Iniciar" para comenzar la carrera
-        btnIniciar = new JButton("Iniciar Carrera");
-        add(btnIniciar);
 
         // Acción del botón "Iniciar"
         btnIniciar.addActionListener(new ActionListener() {
@@ -50,7 +55,7 @@ public class Interfaz extends JFrame {
                 if (!C.getCarreraTerminada()) {
                     btnIniciar.setText("Iniciar Carrera");
                     iniciarCarrera();
-                }else{
+                } else {
                     btnIniciar.setText("Reiniciar");
                     reiniciarCarrera();
                 }
@@ -66,12 +71,14 @@ public class Interfaz extends JFrame {
         });
     }
 
-    // Metodo para actualizar las barras de progreso de los caballos
+    // Metodo para actualizar la posición de los caballos (mover las imágenes)
     public synchronized void actualizarProgreso(int indiceCaballo, int porcentaje) {
-        // Actualizar la barra de progreso correspondiente
-        JProgressBar barra = barrasDeProgreso.get(indiceCaballo);
-        barra.setValue(porcentaje);
-        barra.setString("Caballo " + (indiceCaballo + 1));
+        // Calcular la posición horizontal en base al porcentaje de la carrera
+        int xPos = (int) (porcentaje * 1.5);
+
+        // Obtener el caballo (JLabel) y moverlo
+        JLabel caballoLabel = caballosLabels.get(indiceCaballo);
+        caballoLabel.setLocation(xPos, caballoLabel.getY());
 
         // Si un caballo llega a la meta, detenemos la carrera
         if (porcentaje >= 500 && !C.getCarreraTerminada()) {
@@ -119,22 +126,21 @@ public class Interfaz extends JFrame {
 
         // Si encontramos un ganador, añadimos su nombre
         if (ganador != null) {
-            resultado.append("\n¡El ganador es: ").append(ganador.getNombre() + "!");
+            resultado.append("\n¡El ganador es: ").append(ganador.getNombre()).append("!");
         }
 
         // Mostrar los resultados en un cuadro de diálogo
         int option = JOptionPane.showConfirmDialog(this, resultado.toString(), "Resultados", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE);
     }
 
-
     // Metodo para reiniciar la carrera
     private void reiniciarCarrera() {
-        // Reiniciar los caballos y las barras de progreso
-        for (int i = 0; i < caballos.size(); i++) {
+        // Reiniciar los caballos y sus posiciones
+        for (int i = 1; i <= caballos.size(); i++) {
             Caballo caballo = caballos.get(i);
             caballo.reiniciar();
-            barrasDeProgreso.get(i).setValue(0);
-            barrasDeProgreso.get(i).setString("Caballo " + (i + 1) + " - 0%");
+            caballosLabels.get(i).setLocation(50, 50 + i * 50);  // Restablecer la posición inicial
+            System.out.println("Caballo "+ (i + 1) +" recolocado");
         }
 
         // Habilitar nuevamente el botón de inicio y ponerlo en su estado original
