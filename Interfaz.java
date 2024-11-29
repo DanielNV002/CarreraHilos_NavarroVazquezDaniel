@@ -1,4 +1,8 @@
 import javax.swing.*;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -11,12 +15,14 @@ public class Interfaz extends JFrame {
     private final List<Caballo> caballos;
     private final JButton btnIniciar;
     private JPanel background;  // Panel que contiene los caballos y las líneas
+    private int distancia = 500;
 
     public Interfaz() {
         setTitle("Simulador de Carrera de Caballos");
         setLayout(null);  // Usamos un diseño absoluto para poder mover los caballos
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(900, 400);
+        setResizable(false);
 
         caballosLabels = new ArrayList<>();
         caballos = new ArrayList<>();
@@ -25,6 +31,20 @@ public class Interfaz extends JFrame {
         btnIniciar = new JButton("Iniciar Carrera");
         btnIniciar.setBounds(350, 300, 150, 30);  // Ubicación del botón
         add(btnIniciar);
+
+        // Crear TextField para declarar la distancia
+        JTextField declaraDistancia = new JTextField("500");
+        declaraDistancia.setBounds(600, 300, 115, 20);
+
+        // Aplicar el filtro para permitir solo números
+        ((AbstractDocument) declaraDistancia.getDocument()).setDocumentFilter(new NumericDocumentFilter());
+
+        add(declaraDistancia);
+
+        // Crear Label para la distancia
+        JLabel distanciaLabel = new JLabel("Indica la distancia");
+        distanciaLabel.setBounds(600, 280, 115, 20);
+        add(distanciaLabel);
 
         // Crear background (panel donde estarán los caballos y las líneas)
         background = new JPanel();
@@ -42,11 +62,8 @@ public class Interfaz extends JFrame {
             caballo.setCarreraDeCaballos(this);
         }
 
-
-
         // Crear las líneas de fondo y agregar los caballos
         for (int i = 0; i < caballos.size(); i++) {
-
             // Crear el JLabel para mostrar el número del caballo al principio de la pista
             JLabel numberLabel = new JLabel(""+(i+1));  // Usamos i + 1 para mostrar "Caballo 1", "Caballo 2", etc.
             numberLabel.setForeground(Color.WHITE);  // Color del texto
@@ -64,7 +81,6 @@ public class Interfaz extends JFrame {
 
             // Agregar la etiqueta de los caballos al fondo (JPanel)
             background.add(caballoLabel);
-
         }
 
         //Crea la Meta
@@ -94,6 +110,11 @@ public class Interfaz extends JFrame {
         btnIniciar.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                if(Integer.parseInt(declaraDistancia.getText()) < 100){
+                    declaraDistancia.setText("100");
+                }
+
+                setDistancia(Integer.parseInt(declaraDistancia.getText()));
                 if (!C.getCarreraTerminada()) {
                     btnIniciar.setText("Iniciar Carrera");
                     iniciarCarrera();
@@ -111,6 +132,25 @@ public class Interfaz extends JFrame {
             Interfaz ventana = new Interfaz();
             ventana.setVisible(true);
         });
+    }
+
+    // Clase que extiende DocumentFilter para permitir solo números
+    static class NumericDocumentFilter extends DocumentFilter {
+        @Override
+        public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
+            // Solo insertar números
+            if (string.matches("[0-9]")) {
+                super.insertString(fb, offset, string, attr);
+            }
+        }
+
+        @Override
+        public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
+            // Solo reemplazar con números
+            if (text.matches("[0-9]*")) {
+                super.replace(fb, offset, length, text, attrs);
+            }
+        }
     }
 
     // Metodo para actualizar la posición de los caballos (mover las imágenes)
@@ -144,36 +184,49 @@ public class Interfaz extends JFrame {
         btnIniciar.setEnabled(false);
     }
 
-    // Mostrar los resultados de la carrera cuando termine
+    // Metodo para mostrar los resultados de la carrera
     private void mostrarResultados() {
         StringBuilder resultado = new StringBuilder("La carrera ha terminado. Resultados:\n");
 
-        // Encontrar al caballo ganador
-        Caballo ganador = null;
+        // Lista para guardar los caballos con la mayor distancia recorrida
+        List<Caballo> ganadores = new ArrayList<>();
         int maxDistancia = 0;
 
         // Recorrer todos los caballos y mostrar su distancia final
         for (Caballo caballo : caballos) {
             resultado.append(caballo.getNombre())
                     .append(" ha recorrido ")
-                    .append(caballo.getPorcentaje())
-                    .append(" unidades.\n");
+                    .append((caballo.getPorcentaje() * getDistancia())/500)
+                    .append(" metros.\n");
 
-            // Determinar el caballo con mayor distancia recorrida (ganador)
+            // Determinar el caballo con mayor distancia recorrida
             if (caballo.getPorcentaje() > maxDistancia) {
                 maxDistancia = caballo.getPorcentaje();
-                ganador = caballo;
+                // Limpiar la lista de ganadores y agregar el nuevo ganador
+                ganadores.clear();
+                ganadores.add(caballo);
+            } else if (caballo.getPorcentaje() == maxDistancia) {
+                // Si hay empate, agregar el caballo a la lista de ganadores
+                ganadores.add(caballo);
             }
         }
 
-        // Si encontramos un ganador, añadimos su nombre
-        if (ganador != null) {
-            resultado.append("\n¡El ganador es: ").append(ganador.getNombre()).append("!");
+        // Mostrar los ganadores (puede haber más de uno en caso de empate)
+        if (!ganadores.isEmpty()) {
+            resultado.append("\n¡Los ganadores son: ");
+            for (int i = 0; i < ganadores.size(); i++) {
+                resultado.append(ganadores.get(i).getNombre());
+                if (i < ganadores.size() - 1) {
+                    resultado.append(" y ");
+                }
+            }
+            resultado.append("!");
         }
 
         // Mostrar los resultados en un cuadro de diálogo
-        int option = JOptionPane.showConfirmDialog(this, resultado.toString(), "Resultados", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this, resultado.toString(), "Resultados", JOptionPane.INFORMATION_MESSAGE);
     }
+
 
     // Metodo para reiniciar la carrera
     private void reiniciarCarrera() {
@@ -193,5 +246,13 @@ public class Interfaz extends JFrame {
 
         // Resetear el estado de la carrera
         C.setCarreraTerminada(false);
+    }
+
+    public int getDistancia(){
+        return distancia;
+    }
+
+    public void setDistancia(int d){
+        this.distancia = d;
     }
 }
